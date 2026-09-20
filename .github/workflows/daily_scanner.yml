@@ -1,0 +1,72 @@
+name: Daily Volume Profile MACD Scanner
+
+on:
+  schedule:
+    # 4:30 PM IST = 11:00 UTC
+    - cron: "0 11 * * 1-5"
+
+  # Allows us to run the scanner manually from GitHub
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+
+  run-scanner:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # -----------------------------------------------
+      # Get repository files
+      # -----------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------
+      # Install Python
+      # -----------------------------------------------
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # -----------------------------------------------
+      # Install required packages
+      # -----------------------------------------------
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy yfinance requests
+
+      # -----------------------------------------------
+      # Run Aurora scanner
+      # -----------------------------------------------
+
+      - name: Run scanner
+        run: |
+          python scanner.py
+
+      # -----------------------------------------------
+      # Commit updated webpage
+      # -----------------------------------------------
+
+      - name: Commit updated dashboard
+        run: |
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add index.html
+
+          if git diff --cached --quiet; then
+            echo "No dashboard changes to commit."
+          else
+            git commit -m "Update scanner dashboard"
+            git push
+          fi
